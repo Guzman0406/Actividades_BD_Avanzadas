@@ -1,65 +1,116 @@
-import Image from "next/image";
+import Link from 'next/link';
+import { pool } from '@/lib/db';
 
-export default function Home() {
+// dynamic para tener los datos actualizados cada vez que entramos
+export const dynamic = 'force-dynamic';
+
+export default async function PaginaPrincipal() {
+
+  const clienteDb = await pool.connect();
+
+  // Saber cuánto suman las órdenes completadas.
+  const resultadoIngresos = await clienteDb.query(`
+    SELECT COALESCE(SUM(Ingresos_totales), 0) as total 
+    FROM v_resumen_ordenes_por_estado 
+    WHERE Estado_orden = 'completado'
+  `);
+  // Convertimos el resultado a número. Si es nulo, usamos 0.
+  const totalIngresos = Number(resultadoIngresos.rows[0]?.total || 0);  
+  
+
+  // Saber cuál es el producto que más veces aparece vendido.
+  const resultadoProductoTop = await clienteDb.query(`
+    SELECT nombre_producto, veces_vendido 
+    FROM v_productos_mas_vendidos 
+    ORDER BY veces_vendido DESC
+    LIMIT 1
+  `);
+  const productoEstrella = resultadoProductoTop.rows[0] || { nombre_producto: 'Sin datos', veces_vendido: 0 };
+
+  clienteDb.release();
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <main className="min-h-screen bg-neutral-950 text-gray-200 p-8 font-sans">
+      <div className="max-w-6xl mx-auto">
+
+        <header className="mb-10 border-b border-neutral-800 pb-6">
+          <h1 className="text-3xl font-bold text-white mb-2">Panel de Control</h1>
+          <div className="flex justify-between items-end">
+            <p className="text-gray-500">Dashboard para visualizar Views directas de una base de datos.</p>
+          </div>
+        </header>
+
+        <div className="grid grid-cols-1 md:grid-cols gap-4 mb-10">
+
+          <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-xl shadow-lg">
+            <h3 className="text-xs text-gray-500 uppercase font-bold tracking-wider mb-2">Ingresos Totales</h3>
+            <p className="text-3xl font-bold text-white">
+              ${totalIngresos.toLocaleString()}
+            </p>
+            <p className="text-xs text-gray-600 mt-2">Total procesado (Estado: Completado)</p>
+          </div>
+          
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        { /* CARDS PARA LAS VIEWS */}
+
+        <h2 className="text-xl font-bold text-white mb-6">Explorar Reportes</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+          <Link href="/reports/01_vip_clientes" className="group block p-5 bg-neutral-900 border border-neutral-800 rounded-xl">
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="font-bold text-lg text-white">Clientes VIP</h3>
+                <p className="text-sm text-gray-500 mt-1"> Clientes con compras superiores a $1,000</p>
+              </div>
+              <span className="text-2xl text-gray-700">→</span>
+            </div>
+          </Link>
+
+          <Link href="/reports/02_ventas_por_categoria" className="group block p-5 bg-neutral-900 border border-neutral-800 rounded-xl">
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="font-bold text-lg text-white">Ventas por Categoría</h3>
+                <p className="text-sm text-gray-500 mt-1">Ingresos por tipo de producto</p>
+              </div>
+              <span className="text-2xl text-gray-700">→</span>
+            </div>
+          </Link>
+
+          <Link href="/reports/03_productos_mas_vendidos" className="group block p-5 bg-neutral-900 border border-neutral-800 rounded-xl">
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="font-bold text-lg text-white">Top Productos</h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  Más vendido: <span className="text-white font-bold">{productoEstrella.nombre_producto}</span>
+                </p>
+              </div>
+              <span className="text-2xl text-gray-700">→</span>
+            </div>
+          </Link>
+
+          <Link href="/reports/04_resumen_ordenes_por_estado" className="group block p-5 bg-neutral-900 border border-neutral-800 rounded-xl">
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="font-bold text-lg text-white">Estado de Órdenes</h3>
+                <p className="text-sm text-gray-500 mt-1">Órdenes completadas vs pendientes.</p>
+              </div>
+              <span className="text-2xl text-gray-700">→</span>
+            </div>
+          </Link>
+
+          <Link href="/reports/05_ranking_usuarios_por_gasto" className="group block p-5 bg-neutral-900 border border-neutral-800 rounded-xl md:col-span-2">
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="font-bold text-lg text-white">Ranking de usuarios</h3>
+                <p className="text-sm text-gray-500 mt-1">Tabla completa de posiciones de todos los usuarios.</p>
+              </div>
+              <span className="text-2xl text-gray-700">→</span>
+            </div>
+          </Link>
+
         </div>
-      </main>
-    </div>
-  );
-}
+      </div>
+    </main>
+    );
+  }
