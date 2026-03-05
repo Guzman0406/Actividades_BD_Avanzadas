@@ -1,0 +1,6 @@
+.env
+
+results.sql
+*.log
+
+postgres_data/
