@@ -10,14 +10,13 @@ BEGIN
 
 EXCEPTION
    WHEN unique_violation THEN -- unique_violation para cuando no se cumpla la restricción UNIQUE
-        RAISE NOTICE 'El correo ya existe', email; 
-        RETURN NULL;
+        RAISE NOTICE 'El correo % ya existe', email; 
+        RETURN;
 
     WHEN OTHERS THEN 
         RAISE NOTICE 'Error al crear el cliente: %', SQLERRM; -- SQLERRM indica el error exacto por el cual falló
-        RETURN NULL;
+        RETURN;
 
 END;
 $$;
-
 
