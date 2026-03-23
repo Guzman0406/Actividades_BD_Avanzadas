@@ -4,3 +4,8 @@ results.sql
 *.log
 
 postgres_data/
+
+# Configuraciones de IDE e ignorados adicionales
+.vscode/
+.idea/
+*.sql.bak
